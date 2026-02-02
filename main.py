@@ -7,7 +7,7 @@ import pandas as pd
 from rabin_karp import RabinKarp, MultiPatternRabinKarp
 from utils import format_matches
 from visualizer import display_step_by_step_visualization, create_algorithm_flow_chart
-from performance_analyzer import display_performance_analysis, create_complexity_comparison_chart
+from performance_analyzer import display_performance_analysis, create_complexity_comparison_chart, display_comprehensive_algorithm_comparison, run_comprehensive_benchmark, create_scalability_analysis
 from hash_functions import get_hash_function, compare_hash_functions
 
 def main():
@@ -392,42 +392,87 @@ def performance_tab(default_text, default_pattern, base, prime, hash_type):
     """Performance analysis tab."""
     
     st.header("📈 Performance Analysis")
-    st.write("Compare Rabin-Karp with naive string matching algorithm.")
+    st.write("Compare Rabin-Karp with other string matching algorithms.")
     
-    # Input section for performance testing
-    perf_text = st.text_area(
-        "Text for performance testing:",
-        value=default_text,
-        height=150,
-        help="Larger text will show more significant performance differences"
-    )
+    # Create sub-tabs for different types of analysis
+    perf_tab1, perf_tab2, perf_tab3 = st.tabs([
+        "🔍 Basic Comparison",
+        "🏆 Algorithm Comparison", 
+        "📊 Benchmark Suite"
+    ])
     
-    perf_pattern = st.text_input(
-        "Pattern for performance testing:",
-        value=default_pattern
-    )
+    # Basic Performance Analysis
+    with perf_tab1:
+        st.subheader("🔍 Basic Performance Analysis")
+        st.write("Compare Rabin-Karp with naive string matching algorithm.")
+        
+        # Input section for performance testing
+        perf_text = st.text_area(
+            "Text for performance testing:",
+            value=default_text,
+            height=150,
+            help="Larger text will show more significant performance differences"
+        )
+        
+        perf_pattern = st.text_input(
+            "Pattern for performance testing:",
+            value=default_pattern
+        )
+        
+        if st.button("🚀 Run Basic Performance Analysis", type="primary"):
+            if perf_text and perf_pattern:
+                display_performance_analysis(perf_text, perf_pattern, base, prime)
+            else:
+                st.error("Please provide both text and pattern for analysis.")
+        
+        # Hash function comparison
+        st.markdown("---")
+        st.subheader("🔢 Hash Function Comparison")
+        
+        if st.button("Compare Hash Functions"):
+            if perf_text and perf_pattern:
+                with st.spinner("Comparing hash functions..."):
+                    comparison = compare_hash_functions(perf_text, len(perf_pattern), base, prime)
+                
+                if comparison:
+                    display_hash_function_comparison(comparison)
+            else:
+                st.error("Please provide text and pattern for hash function comparison.")
     
-    if st.button("🚀 Run Performance Analysis", type="primary"):
-        if perf_text and perf_pattern:
-            display_performance_analysis(perf_text, perf_pattern, base, prime)
-        else:
-            st.error("Please provide both text and pattern for analysis.")
+    # Comprehensive Algorithm Comparison
+    with perf_tab2:
+        st.subheader("🏆 Comprehensive Algorithm Comparison")
+        st.write("Compare Rabin-Karp with Naive, KMP, Boyer-Moore, and Z Algorithm.")
+        
+        # Input section
+        comp_text = st.text_area(
+            "Text for algorithm comparison:",
+            value=default_text,
+            height=120,
+            key="comp_text"
+        )
+        
+        comp_pattern = st.text_input(
+            "Pattern for algorithm comparison:",
+            value=default_pattern,
+            key="comp_pattern"
+        )
+        
+        if st.button("🏁 Run Algorithm Comparison", type="primary"):
+            if comp_text and comp_pattern:
+                display_comprehensive_algorithm_comparison(comp_text, comp_pattern, base, prime, hash_type)
+            else:
+                st.error("Please provide both text and pattern for comparison.")
+        
+        # Scalability Analysis
+        st.markdown("---")
+        create_scalability_analysis()
     
-    # Hash function comparison
-    st.markdown("---")
-    st.subheader("🔢 Hash Function Comparison")
+    # Benchmark Suite
+    with perf_tab3:
+        run_comprehensive_benchmark()
     
-    if st.button("Compare Hash Functions"):
-        if perf_text and perf_pattern:
-            with st.spinner("Comparing hash functions..."):
-                comparison = compare_hash_functions(perf_text, len(perf_pattern), base, prime)
-            
-            if comparison:
-                display_hash_function_comparison(comparison)
-        else:
-            st.error("Please provide text and pattern for hash function comparison.")
-    
-    # Theoretical complexity comparison
+    # Theoretical complexity comparison (always visible)
     st.markdown("---")
     create_complexity_comparison_chart()
 
