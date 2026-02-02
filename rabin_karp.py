@@ -414,21 +414,3 @@ class MultiPatternRabinKarp:
             'efficiency_improvement': round(efficiency_improvement, 2),
             'comparisons_per_pattern': round(actual_comparisons / total_patterns, 2) if total_patterns > 0 else 0
         }
-
-def rabin_karp_search(text, pattern, case_sensitive=True, base=256, prime=101, hash_type="polynomial"):
-    """
-    Convenience function for Rabin-Karp search with hash function selection.
-    
-    Args:
-        text (str): Text to search in
-        pattern (str): Pattern to search for
-        case_sensitive (bool): Whether search is case sensitive
-        base (int): Base for hash function
-        prime (int): Prime for modular arithmetic
-        hash_type (str): Type of hash function to use
-    
-    Returns:
-        dict: Search results
-    """
-    rk = RabinKarp(base, prime, hash_type)
-    return rk.search(text, pattern, case_sensitive)

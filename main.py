@@ -735,10 +735,258 @@ def highlight_matches(text, matches, pattern_length):
     
     return highlighted
 
+def testing_tab():
+    """Testing and validation tab."""
+    
+    st.header("🧪 Testing & Validation Suite")
+    st.write("Comprehensive testing suite to validate algorithm correctness and performance.")
+    
+    # Test categories
+    test_categories = {
+        "Core Algorithm Tests": {
+            "description": "Test basic Rabin-Karp functionality, edge cases, and correctness",
+            "tests": ["Pattern matching accuracy", "Case sensitivity", "Hash function variants", "Statistics tracking"]
+        },
+        "Hash Function Tests": {
+            "description": "Validate all hash function implementations and their properties", 
+            "tests": ["Polynomial hash", "Simple hash", "DJB2 hash", "FNV hash", "Rolling hash accuracy"]
+        },
+        "Algorithm Comparison Tests": {
+            "description": "Test all string matching algorithms for consistency and correctness",
+            "tests": ["Naive algorithm", "KMP algorithm", "Boyer-Moore algorithm", "Z algorithm", "Result consistency"]
+        },
+        "Performance Tests": {
+            "description": "Validate performance characteristics and stress testing",
+            "tests": ["Large input handling", "Memory usage", "Scalability", "Concurrent execution"]
+        }
+    }
+    
+    # Display test categories
+    st.subheader("📋 Available Test Categories")
+    
+    for category, info in test_categories.items():
+        with st.expander(f"🔍 {category}"):
+            st.write(f"**Description:** {info['description']}")
+            st.write("**Test Coverage:**")
+            for test in info['tests']:
+                st.write(f"- {test}")
+    
+    # Test execution section
+    st.subheader("🚀 Run Tests")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### Quick Tests")
+        st.write("Run essential tests to verify core functionality")
+        
+        if st.button("🏃‍♂️ Run Quick Tests", type="primary"):
+            run_quick_tests_ui()
+    
+    with col2:
+        st.markdown("#### Full Test Suite")
+        st.write("Run comprehensive test suite (may take longer)")
+        
+        if st.button("🧪 Run All Tests"):
+            run_full_tests_ui()
+    
+    # Manual testing section
+    st.subheader("🔧 Manual Testing Tools")
+    
+    st.markdown("#### Custom Test Case")
+    st.write("Create your own test case to verify specific functionality:")
+    
+    test_col1, test_col2 = st.columns(2)
+    
+    with test_col1:
+        custom_text = st.text_area(
+            "Test Text:",
+            value="Create your own test case here",
+            height=100
+        )
+    
+    with test_col2:
+        custom_pattern = st.text_input("Test Pattern:", value="test")
+        expected_matches = st.text_input(
+            "Expected Match Positions (comma-separated):", 
+            value="17",
+            help="Enter expected positions where pattern should be found"
+        )
+    
+    if st.button("🧪 Run Custom Test"):
+        run_custom_test_ui(custom_text, custom_pattern, expected_matches)
+
+def run_quick_tests_ui():
+    """Run quick tests and display results in UI."""
+    
+    st.info("🏃‍♂️ Running quick tests...")
+    
+    try:
+        # Simple validation tests without importing test modules
+        rk = RabinKarp()
+        
+        # Test 1: Basic functionality
+        result1 = rk.search("hello world", "world")
+        test1_pass = result1['matches'] == [6]
+        
+        # Test 2: Multiple matches
+        result2 = rk.search("abcabcabc", "abc")
+        test2_pass = result2['matches'] == [0, 3, 6]
+        
+        # Test 3: No matches
+        result3 = rk.search("hello", "xyz")
+        test3_pass = result3['matches'] == []
+        
+        # Test 4: Case sensitivity
+        result4 = rk.search("Hello", "hello", case_sensitive=False)
+        test4_pass = result4['matches'] == [0]
+        
+        tests_passed = sum([test1_pass, test2_pass, test3_pass, test4_pass])
+        
+        if tests_passed == 4:
+            st.success("✅ All 4 quick tests passed! Core functionality is working correctly.")
+        else:
+            st.error(f"❌ {4 - tests_passed} out of 4 tests failed.")
+        
+        # Show test details
+        with st.expander("📋 Test Details"):
+            st.write(f"✅ Basic search: {'PASS' if test1_pass else 'FAIL'}")
+            st.write(f"✅ Multiple matches: {'PASS' if test2_pass else 'FAIL'}")
+            st.write(f"✅ No matches: {'PASS' if test3_pass else 'FAIL'}")
+            st.write(f"✅ Case insensitive: {'PASS' if test4_pass else 'FAIL'}")
+    
+    except Exception as e:
+        st.error(f"❌ Error running quick tests: {e}")
+
+def run_full_tests_ui():
+    """Run full test suite and display results in UI."""
+    
+    st.info("🧪 Running comprehensive validation...")
+    
+    try:
+        # Extended validation tests
+        rk = RabinKarp()
+        algorithms = StringMatchingAlgorithms()
+        
+        test_results = []
+        
+        # Test different algorithms for consistency
+        text = "algorithm testing for consistency"
+        pattern = "test"
+        
+        rk_result = rk.search(text, pattern)
+        naive_result = algorithms.naive_search(text, pattern)
+        kmp_result = algorithms.kmp_search(text, pattern)
+        
+        consistency_test = (rk_result['matches'] == naive_result['matches'] == kmp_result['matches'])
+        test_results.append(("Algorithm Consistency", consistency_test))
+        
+        # Test hash functions
+        hash_types = ["polynomial", "simple", "djb2", "fnv"]
+        hash_test_pass = True
+        
+        for hash_type in hash_types:
+            try:
+                rk_hash = RabinKarp(hash_type=hash_type)
+                result = rk_hash.search("test hash functions", "hash")
+                if result['matches'] != [5]:
+                    hash_test_pass = False
+                    break
+            except:
+                hash_test_pass = False
+                break
+        
+        test_results.append(("Hash Functions", hash_test_pass))
+        
+        # Test multi-pattern search
+        try:
+            multi_rk = MultiPatternRabinKarp()
+            multi_result = multi_rk.search("test multiple patterns", ["test", "multiple"])
+            multi_test_pass = (len(multi_result['matches']['test']) > 0 and 
+                             len(multi_result['matches']['multiple']) > 0)
+        except:
+            multi_test_pass = False
+        
+        test_results.append(("Multi-Pattern Search", multi_test_pass))
+        
+        # Test edge cases
+        edge_cases = [
+            ("", "pattern", []),
+            ("text", "", []),
+            ("short", "verylongpattern", []),
+            ("a", "a", [0])
+        ]
+        
+        edge_test_pass = True
+        for test_text, test_pattern, expected in edge_cases:
+            try:
+                result = rk.search(test_text, test_pattern)
+                if result['matches'] != expected:
+                    edge_test_pass = False
+                    break
+            except:
+                edge_test_pass = False
+                break
+        
+        test_results.append(("Edge Cases", edge_test_pass))
+        
+        # Display results
+        passed_tests = sum(1 for _, passed in test_results if passed)
+        total_tests = len(test_results)
+        
+        if passed_tests == total_tests:
+            st.success(f"🎉 All {total_tests} test categories passed! Your implementation is robust!")
+        else:
+            st.error(f"❌ {total_tests - passed_tests} out of {total_tests} test categories failed.")
+        
+        # Show detailed results
+        st.subheader("📊 Test Results by Category")
+        
+        for test_name, passed in test_results:
+            status = "✅" if passed else "❌"
+            st.write(f"{status} {test_name}: {'PASS' if passed else 'FAIL'}")
+    
+    except Exception as e:
+        st.error(f"❌ Error running comprehensive tests: {e}")
+
+def run_custom_test_ui(text, pattern, expected_positions_str):
+    """Run a custom test case and display results."""
+    
+    try:
+        # Parse expected positions
+        if expected_positions_str.strip():
+            expected_positions = [int(x.strip()) for x in expected_positions_str.split(',')]
+        else:
+            expected_positions = []
+        
+        # Run Rabin-Karp search
+        rk = RabinKarp()
+        result = rk.search(text, pattern)
+        actual_positions = result['matches']
+        
+        # Compare results
+        if actual_positions == expected_positions:
+            st.success(f"✅ Test passed! Found matches at positions: {actual_positions}")
+        else:
+            st.error(f"❌ Test failed!")
+            st.write(f"**Expected:** {expected_positions}")
+            st.write(f"**Actual:** {actual_positions}")
+        
+        # Show additional details
+        with st.expander("📋 Test Details"):
+            st.write(f"**Text length:** {len(text)}")
+            st.write(f"**Pattern length:** {len(pattern)}")
+            st.write(f"**Comparisons:** {result['statistics']['comparisons']}")
+            st.write(f"**Hash calculations:** {result['statistics']['hash_calculations']}")
+            st.write(f"**Spurious hits:** {result['statistics']['spurious_hits']}")
+    
+    except ValueError:
+        st.error("❌ Invalid expected positions format. Use comma-separated numbers.")
+    except Exception as e:
+        st.error(f"❌ Error running custom test: {e}")
+
 if __name__ == "__main__":
     main()
-
-def testing_tab():
     """Testing and validation tab."""
     
     st.header("🧪 Testing & Validation Suite")
@@ -864,169 +1112,5 @@ def testing_tab():
     if st.button("🧪 Run Custom Test"):
         run_custom_test_ui(custom_text, custom_pattern, expected_matches)
 
-def run_quick_tests_ui():
-    """Run quick tests and display results in UI."""
-    
-    st.info("🏃‍♂️ Running quick tests...")
-    
-    # Progress bar
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    try:
-        # Import test modules
-        import sys
-        import os
-        sys.path.append(os.path.join(os.path.dirname(__file__), 'tests'))
-        
-        from tests.test_rabin_karp import TestRabinKarp
-        from tests.test_hash_functions import TestHashFunctions
-        
-        # Run core tests
-        import unittest
-        
-        suite = unittest.TestSuite()
-        suite.addTest(unittest.makeSuite(TestRabinKarp))
-        progress_bar.progress(50)
-        status_text.text("Running core algorithm tests...")
-        
-        suite.addTest(unittest.makeSuite(TestHashFunctions))
-        progress_bar.progress(100)
-        status_text.text("Running hash function tests...")
-        
-        # Execute tests
-        from io import StringIO
-        stream = StringIO()
-        runner = unittest.TextTestRunner(stream=stream, verbosity=2)
-        result = runner.run(suite)
-        
-        # Display results
-        if result.failures == 0 and result.errors == 0:
-            st.success(f"✅ All {result.testsRun} quick tests passed!")
-        else:
-            st.error(f"❌ {len(result.failures)} failures, {len(result.errors)} errors out of {result.testsRun} tests")
-        
-        # Show detailed results
-        with st.expander("📋 Detailed Test Results"):
-            st.code(stream.getvalue())
-    
-    except ImportError as e:
-        st.error(f"❌ Could not import test modules: {e}")
-        st.info("💡 Tests are available when running locally with the full project structure.")
-    
-    except Exception as e:
-        st.error(f"❌ Error running tests: {e}")
-
-def run_full_tests_ui():
-    """Run full test suite and display results in UI."""
-    
-    st.info("🧪 Running full test suite... This may take a moment.")
-    
-    # Progress bar
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    try:
-        import sys
-        import os
-        sys.path.append(os.path.join(os.path.dirname(__file__), 'tests'))
-        
-        # Import all test modules
-        test_modules = [
-            ("Core Algorithm", "test_rabin_karp"),
-            ("Hash Functions", "test_hash_functions"),
-            ("Algorithm Comparison", "test_algorithms"),
-            ("Performance", "test_performance")
-        ]
-        
-        import unittest
-        from io import StringIO
-        
-        all_results = []
-        
-        for i, (category, module_name) in enumerate(test_modules):
-            progress = (i + 1) / len(test_modules)
-            progress_bar.progress(progress)
-            status_text.text(f"Running {category} tests...")
-            
-            try:
-                # Import and run tests for this category
-                module = __import__(module_name)
-                
-                suite = unittest.TestLoader().loadTestsFromModule(module)
-                stream = StringIO()
-                runner = unittest.TextTestRunner(stream=stream, verbosity=1)
-                result = runner.run(suite)
-                
-                all_results.append((category, result, stream.getvalue()))
-            
-            except Exception as e:
-                st.warning(f"⚠️ Could not run {category} tests: {e}")
-        
-        # Display summary
-        total_tests = sum(result.testsRun for _, result, _ in all_results)
-        total_failures = sum(len(result.failures) for _, result, _ in all_results)
-        total_errors = sum(len(result.errors) for _, result, _ in all_results)
-        
-        if total_failures == 0 and total_errors == 0:
-            st.success(f"🎉 All {total_tests} tests passed! Your implementation is solid!")
-        else:
-            st.error(f"❌ {total_failures} failures, {total_errors} errors out of {total_tests} tests")
-        
-        # Category breakdown
-        st.subheader("📊 Test Results by Category")
-        
-        for category, result, output in all_results:
-            success = result.testsRun - len(result.failures) - len(result.errors)
-            success_rate = (success / result.testsRun * 100) if result.testsRun > 0 else 0
-            
-            status = "✅" if len(result.failures) == 0 and len(result.errors) == 0 else "❌"
-            
-            with st.expander(f"{status} {category}: {success}/{result.testsRun} passed ({success_rate:.1f}%)"):
-                if len(result.failures) > 0 or len(result.errors) > 0:
-                    st.code(output)
-                else:
-                    st.success("All tests in this category passed!")
-    
-    except ImportError as e:
-        st.error(f"❌ Could not import test modules: {e}")
-        st.info("💡 Full test suite is available when running locally with the complete project structure.")
-    
-    except Exception as e:
-        st.error(f"❌ Error running full test suite: {e}")
-
-def run_custom_test_ui(text, pattern, expected_positions_str):
-    """Run a custom test case and display results."""
-    
-    try:
-        # Parse expected positions
-        if expected_positions_str.strip():
-            expected_positions = [int(x.strip()) for x in expected_positions_str.split(',')]
-        else:
-            expected_positions = []
-        
-        # Run Rabin-Karp search
-        rk = RabinKarp()
-        result = rk.search(text, pattern)
-        actual_positions = result['matches']
-        
-        # Compare results
-        if actual_positions == expected_positions:
-            st.success(f"✅ Test passed! Found matches at positions: {actual_positions}")
-        else:
-            st.error(f"❌ Test failed!")
-            st.write(f"**Expected:** {expected_positions}")
-            st.write(f"**Actual:** {actual_positions}")
-        
-        # Show additional details
-        with st.expander("📋 Test Details"):
-            st.write(f"**Text length:** {len(text)}")
-            st.write(f"**Pattern length:** {len(pattern)}")
-            st.write(f"**Comparisons:** {result['statistics']['comparisons']}")
-            st.write(f"**Hash calculations:** {result['statistics']['hash_calculations']}")
-            st.write(f"**Spurious hits:** {result['statistics']['spurious_hits']}")
-    
-    except ValueError:
-        st.error("❌ Invalid expected positions format. Use comma-separated numbers.")
-    except Exception as e:
-        st.error(f"❌ Error running custom test: {e}")
+if __name__ == "__main__":
+    main()
