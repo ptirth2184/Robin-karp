@@ -4,10 +4,11 @@ Streamlit Web Application for Rabin-Karp String Matching Algorithm
 
 import streamlit as st
 import pandas as pd
-from rabin_karp import RabinKarp
+from rabin_karp import RabinKarp, MultiPatternRabinKarp
 from utils import format_matches
 from visualizer import display_step_by_step_visualization, create_algorithm_flow_chart
 from performance_analyzer import display_performance_analysis, create_complexity_comparison_chart
+from hash_functions import get_hash_function, compare_hash_functions
 
 def main():
     st.set_page_config(
@@ -24,8 +25,9 @@ def main():
         st.session_state.current_step = 0
     
     # Create tabs for different features
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "🔍 Basic Search", 
+        "🎯 Multi-Pattern Search",
         "🎬 Step-by-Step Visualization", 
         "📈 Performance Analysis",
         "📚 Algorithm Theory"
@@ -34,12 +36,20 @@ def main():
     # Sidebar for algorithm parameters
     st.sidebar.header("⚙️ Algorithm Settings")
     
+    # Hash function selection
+    hash_type = st.sidebar.selectbox(
+        "Hash Function Type",
+        ["polynomial", "simple", "djb2", "fnv"],
+        index=0,
+        help="Choose the hash function algorithm"
+    )
+    
     base = st.sidebar.number_input(
         "Base (for hash function)", 
         min_value=2, 
         max_value=1000, 
-        value=256,
-        help="Base value for polynomial hash function"
+        value=256 if hash_type == "polynomial" else 33 if hash_type == "djb2" else 256,
+        help="Base value for hash function"
     )
     
     prime = st.sidebar.number_input(
@@ -55,6 +65,10 @@ def main():
         value=True,
         help="Whether the search should be case sensitive"
     )
+    
+    # Display hash function info
+    hash_func = get_hash_function(hash_type, base, prime)
+    st.sidebar.info(f"**{hash_func.name}**\n\n{hash_func.description}")
     
     # Sample text options
     st.sidebar.header("📝 Sample Texts")
@@ -74,18 +88,22 @@ def main():
     
     # Tab 1: Basic Search
     with tab1:
-        basic_search_tab(text, pattern, base, prime, case_sensitive)
+        basic_search_tab(text, pattern, base, prime, case_sensitive, hash_type)
     
-    # Tab 2: Step-by-Step Visualization
+    # Tab 2: Multi-Pattern Search
     with tab2:
-        visualization_tab(text, pattern, base, prime)
+        multi_pattern_search_tab(text, base, prime, case_sensitive, hash_type)
     
-    # Tab 3: Performance Analysis
+    # Tab 3: Step-by-Step Visualization
     with tab3:
-        performance_tab(text, pattern, base, prime)
+        visualization_tab(text, pattern, base, prime, hash_type)
     
-    # Tab 4: Algorithm Theory
+    # Tab 4: Performance Analysis
     with tab4:
+        performance_tab(text, pattern, base, prime, hash_type)
+    
+    # Tab 5: Algorithm Theory
+    with tab5:
         theory_tab()
 
 def get_sample_text_and_pattern(option):
@@ -116,7 +134,7 @@ def get_sample_text_and_pattern(option):
     
     return samples.get(option, samples["Custom"])
 
-def basic_search_tab(default_text, default_pattern, base, prime, case_sensitive):
+def basic_search_tab(default_text, default_pattern, base, prime, case_sensitive, hash_type):
     """Basic search functionality tab."""
     
     # Main input section
@@ -157,13 +175,189 @@ def basic_search_tab(default_text, default_pattern, base, prime, case_sensitive)
         
         # Perform search
         with st.spinner("Searching..."):
-            rk = RabinKarp(base=base, prime=prime)
+            rk = RabinKarp(base=base, prime=prime, hash_type=hash_type)
             results = rk.search(text, pattern, case_sensitive)
         
         # Display results
         display_results(text, pattern, results)
 
-def visualization_tab(default_text, default_pattern, base, prime):
+def multi_pattern_search_tab(default_text, base, prime, case_sensitive, hash_type):
+    """Multi-pattern search functionality tab."""
+    
+    st.header("� Multiple Pattern Search")
+    st.write("Search for multiple patterns simultaneously in the same text.")
+    
+    # Input section
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("📝 Input Text")
+        text = st.text_area(
+            "Enter the text to search in:",
+            height=150,
+            placeholder="Enter your text here...",
+            value=default_text,
+            key="multi_text"
+        )
+    
+    with col2:
+        st.subheader("🎯 Search Patterns")
+        patterns_input = st.text_area(
+            "Enter patterns (one per line):",
+            height=150,
+            placeholder="pattern1\npattern2\npattern3",
+            value="fox\ndog\nthe\nbrown",
+            key="multi_patterns"
+        )
+        
+        # Parse patterns
+        patterns = [p.strip() for p in patterns_input.split('\n') if p.strip()]
+        
+        st.subheader("📊 Pattern Stats")
+        if patterns:
+            st.metric("Number of Patterns", len(patterns))
+            st.metric("Avg Pattern Length", round(sum(len(p) for p in patterns) / len(patterns), 1))
+    
+    # Search options
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        search_mode = st.radio(
+            "Search Mode:",
+            ["Individual Search", "Optimized Multi-Search"],
+            help="Individual: Search each pattern separately\nOptimized: Use multi-pattern algorithm"
+        )
+    
+    with col2:
+        show_details = st.checkbox("Show Detailed Statistics", value=True)
+    
+    # Search button
+    if st.button("� Search All Patterns", type="primary", key="multi_search"):
+        if not text.strip():
+            st.error("Please enter some text to search in.")
+            return
+        
+        if not patterns:
+            st.error("Please enter at least one pattern to search for.")
+            return
+        
+        # Perform multi-pattern search
+        with st.spinner("Searching for multiple patterns..."):
+            if search_mode == "Optimized Multi-Search":
+                multi_rk = MultiPatternRabinKarp(base=base, prime=prime, hash_type=hash_type)
+                results = multi_rk.search(text, patterns, case_sensitive)
+            else:
+                # Individual searches
+                results = perform_individual_searches(text, patterns, base, prime, case_sensitive, hash_type)
+        
+        # Display multi-pattern results
+        display_multi_pattern_results(text, patterns, results, show_details)
+
+def perform_individual_searches(text, patterns, base, prime, case_sensitive, hash_type):
+    """Perform individual searches for each pattern."""
+    matches = {}
+    pattern_stats = {}
+    overall_stats = {'comparisons': 0, 'hash_calculations': 0, 'spurious_hits': 0}
+    
+    for pattern in patterns:
+        rk = RabinKarp(base=base, prime=prime, hash_type=hash_type)
+        result = rk.search(text, pattern, case_sensitive)
+        
+        matches[pattern] = result['matches']
+        pattern_stats[pattern] = {
+            'matches_found': len(result['matches']),
+            'comparisons': result['statistics']['comparisons'],
+            'hash_calculations': result['statistics']['hash_calculations'],
+            'spurious_hits': result['statistics']['spurious_hits']
+        }
+        
+        # Accumulate overall stats
+        overall_stats['comparisons'] += result['statistics']['comparisons']
+        overall_stats['hash_calculations'] += result['statistics']['hash_calculations']
+        overall_stats['spurious_hits'] += result['statistics']['spurious_hits']
+    
+    return {
+        'matches': matches,
+        'pattern_stats': pattern_stats,
+        'overall_stats': overall_stats,
+        'efficiency_metrics': {}  # Will be calculated if needed
+    }
+
+def display_multi_pattern_results(text, patterns, results, show_details):
+    """Display results for multi-pattern search."""
+    
+    matches = results['matches']
+    pattern_stats = results['pattern_stats']
+    overall_stats = results['overall_stats']
+    
+    # Summary metrics
+    st.header("📊 Search Summary")
+    
+    total_matches = sum(len(match_list) for match_list in matches.values())
+    patterns_with_matches = sum(1 for match_list in matches.values() if match_list)
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total Matches", total_matches)
+    with col2:
+        st.metric("Patterns Found", f"{patterns_with_matches}/{len(patterns)}")
+    with col3:
+        st.metric("Total Comparisons", overall_stats['comparisons'])
+    with col4:
+        st.metric("Spurious Hits", overall_stats['spurious_hits'])
+    
+    # Pattern-wise results
+    st.header("🎯 Pattern-wise Results")
+    
+    # Create results table
+    results_data = []
+    for pattern in patterns:
+        pattern_matches = matches.get(pattern, [])
+        stats = pattern_stats.get(pattern, {})
+        
+        results_data.append({
+            'Pattern': pattern,
+            'Matches Found': len(pattern_matches),
+            'Positions': ', '.join(map(str, pattern_matches[:5])) + ('...' if len(pattern_matches) > 5 else ''),
+            'Comparisons': stats.get('comparisons', 0),
+            'Hash Calculations': stats.get('hash_calculations', 0),
+            'Spurious Hits': stats.get('spurious_hits', 0)
+        })
+    
+    results_df = pd.DataFrame(results_data)
+    st.dataframe(results_df, hide_index=True)
+    
+    # Detailed view for each pattern
+    if show_details:
+        st.header("🔍 Detailed Match Information")
+        
+        for pattern in patterns:
+            pattern_matches = matches.get(pattern, [])
+            if pattern_matches:
+                with st.expander(f"Pattern '{pattern}' - {len(pattern_matches)} matches"):
+                    formatted_matches = format_matches(pattern_matches, text, pattern)
+                    
+                    for i, match_info in enumerate(formatted_matches, 1):
+                        st.write(f"**Match {i}:** Position {match_info['position']}")
+                        st.write(f"Context: {match_info['context']}")
+                        st.write("---")
+    
+    # Efficiency metrics (if available)
+    if 'efficiency_metrics' in results and results['efficiency_metrics']:
+        st.header("⚡ Efficiency Metrics")
+        metrics = results['efficiency_metrics']
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Success Rate", f"{metrics.get('match_success_rate', 0):.1f}%")
+        with col2:
+            st.metric("Efficiency Improvement", f"{metrics.get('efficiency_improvement', 0):.1f}%")
+        with col3:
+            st.metric("Avg Comparisons/Pattern", f"{metrics.get('comparisons_per_pattern', 0):.1f}")
+
+def visualization_tab(default_text, default_pattern, base, prime, hash_type):
     """Step-by-step visualization tab."""
     
     st.header("🎬 Algorithm Visualization")
@@ -194,7 +388,7 @@ def visualization_tab(default_text, default_pattern, base, prime):
         else:
             display_step_by_step_visualization(viz_text, viz_pattern, base, prime)
 
-def performance_tab(default_text, default_pattern, base, prime):
+def performance_tab(default_text, default_pattern, base, prime, hash_type):
     """Performance analysis tab."""
     
     st.header("📈 Performance Analysis")
@@ -219,9 +413,58 @@ def performance_tab(default_text, default_pattern, base, prime):
         else:
             st.error("Please provide both text and pattern for analysis.")
     
+    # Hash function comparison
+    st.markdown("---")
+    st.subheader("🔢 Hash Function Comparison")
+    
+    if st.button("Compare Hash Functions"):
+        if perf_text and perf_pattern:
+            with st.spinner("Comparing hash functions..."):
+                comparison = compare_hash_functions(perf_text, len(perf_pattern), base, prime)
+            
+            if comparison:
+                display_hash_function_comparison(comparison)
+        else:
+            st.error("Please provide text and pattern for hash function comparison.")
+    
     # Theoretical complexity comparison
     st.markdown("---")
     create_complexity_comparison_chart()
+
+def display_hash_function_comparison(comparison):
+    """Display hash function comparison results."""
+    
+    st.subheader("📊 Hash Function Performance Comparison")
+    
+    # Create comparison table
+    comparison_data = []
+    for hash_type, data in comparison.items():
+        comparison_data.append({
+            'Hash Function': data['name'],
+            'Unique Hashes': data['unique_hashes'],
+            'Collision Groups': data['collision_groups'],
+            'Collision Rate (%)': f"{data['collision_rate']:.2f}%",
+            'Uniformity Score': data['distribution_uniformity']
+        })
+    
+    comparison_df = pd.DataFrame(comparison_data)
+    st.dataframe(comparison_df, hide_index=True)
+    
+    # Detailed analysis
+    st.subheader("🔍 Detailed Analysis")
+    
+    for hash_type, data in comparison.items():
+        with st.expander(f"{data['name']} - Details"):
+            st.write(f"**Description:** {data['description']}")
+            st.write(f"**Total Windows Analyzed:** {data['total_windows']}")
+            st.write(f"**Unique Hash Values:** {data['unique_hashes']}")
+            st.write(f"**Collision Groups:** {data['collision_groups']}")
+            st.write(f"**Collision Rate:** {data['collision_rate']:.2f}%")
+            st.write(f"**Distribution Uniformity:** {data['distribution_uniformity']}/100")
+            
+            if data['hash_values']:
+                st.write("**Sample Hash Values:**")
+                st.code(', '.join(map(str, data['hash_values'][:10])))
 
 def theory_tab():
     """Algorithm theory and explanation tab."""
@@ -240,16 +483,38 @@ def theory_tab():
     1. **Rolling Hash**: Instead of recalculating hash from scratch for each position, 
        we use a rolling hash technique that updates the hash in constant time.
     
-    2. **Hash Function**: We use a polynomial hash function:
-       ```
-       hash(s) = (s[0] × base^(m-1) + s[1] × base^(m-2) + ... + s[m-1]) mod prime
-       ```
+    2. **Hash Function**: We use various hash functions for different performance characteristics.
     
     3. **Spurious Hits**: When hash values match but strings don't, we need character-by-character verification.
     """)
     
     # Algorithm steps
     create_algorithm_flow_chart()
+    
+    # Hash function details
+    st.markdown("""
+    ### 🔢 Hash Function Types
+    
+    **Polynomial Hash**: `hash = (c₀×base^(n-1) + c₁×base^(n-2) + ... + cₙ₋₁) mod prime`
+    - Best overall performance
+    - Good distribution properties
+    - Efficient rolling hash
+    
+    **Simple Additive Hash**: `hash = (sum of ASCII values × base) mod prime`
+    - Simple to understand
+    - Fast computation
+    - Higher collision rate
+    
+    **DJB2 Hash**: `hash = ((hash × 33) + c) mod prime`
+    - Popular in practice
+    - Good distribution
+    - Fast computation
+    
+    **FNV Hash**: `hash = (hash × prime ⊕ c) mod prime`
+    - Good avalanche effect
+    - Used in many applications
+    - Slightly more complex
+    """)
     
     # Advantages and disadvantages
     col1, col2 = st.columns(2)
@@ -260,8 +525,9 @@ def theory_tab():
         - **Average O(n+m) time complexity**
         - **Good for multiple pattern search**
         - **Works well with large alphabets**
-        - **Simple to implement**
+        - **Multiple hash function options**
         - **Effective for long patterns**
+        - **Parallelizable for multiple patterns**
         """)
     
     with col2:
@@ -270,8 +536,8 @@ def theory_tab():
         - **Worst case O(nm) complexity**
         - **Spurious hits can degrade performance**
         - **Hash function choice affects performance**
-        - **Not cache-friendly for very short patterns**
-        - **Requires good hash parameters**
+        - **Parameter tuning required**
+        - **Memory overhead for hash calculations**
         """)
     
     # Applications
@@ -284,38 +550,29 @@ def theory_tab():
     - **Web Search**: Pattern matching in large documents
     - **Data Deduplication**: Finding duplicate content
     - **Network Security**: Pattern matching in network packets
-    """)
-    
-    # Hash function analysis
-    st.markdown("""
-    ### 🔢 Hash Function Parameters
-    
-    **Base Value**: Typically 256 (number of ASCII characters)
-    - Larger base → better distribution but higher values
-    - Should be larger than alphabet size
-    
-    **Prime Modulus**: A large prime number (e.g., 101, 1009, 10007)
-    - Reduces hash collisions
-    - Should be large enough to minimize spurious hits
-    - Common choices: 101, 1009, 1000000007
+    - **Bioinformatics**: Protein sequence matching
+    - **Document Similarity**: Comparing document content
     """)
     
     # Interactive hash calculator
-    st.markdown("### 🧮 Hash Calculator")
+    st.markdown("### 🧮 Interactive Hash Calculator")
     
     calc_col1, calc_col2 = st.columns(2)
     
     with calc_col1:
         calc_text = st.text_input("Text to hash:", value="hello")
-        calc_base = st.number_input("Base:", value=256, min_value=2)
+        calc_hash_type = st.selectbox("Hash Function:", ["polynomial", "simple", "djb2", "fnv"])
     
     with calc_col2:
+        calc_base = st.number_input("Base:", value=256, min_value=2)
         calc_prime = st.number_input("Prime:", value=101, min_value=2)
         
         if calc_text:
-            from utils import calculate_hash
-            hash_val = calculate_hash(calc_text, len(calc_text), calc_base, calc_prime)
+            hash_func = get_hash_function(calc_hash_type, calc_base, calc_prime)
+            hash_val = hash_func.calculate_hash(calc_text, len(calc_text))
             st.metric("Hash Value", hash_val)
+            st.write(f"**Function:** {hash_func.name}")
+            st.write(f"**Formula:** {hash_func.description}")
 
 def display_results(text, pattern, results):
     """Display search results in the Streamlit interface."""

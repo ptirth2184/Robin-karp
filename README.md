@@ -13,26 +13,28 @@ A comprehensive implementation of the Rabin-Karp string matching algorithm with 
 - ✅ Algorithm performance statistics
 - ✅ Match highlighting and context display
 
-### Phase 2 ✅ (NEW!)
-- ✅ **Step-by-step algorithm visualization**
-- ✅ **Interactive algorithm walkthrough**
-- ✅ **Performance comparison with naive algorithm**
-- ✅ **Time complexity analysis and charts**
-- ✅ **Hash collision analysis**
-- ✅ **Algorithm theory and educational content**
-- ✅ **Multiple sample texts for testing**
-- ✅ **Hash calculator and parameter tuning**
+### Phase 3 ✅ (NEW!)
+- ✅ **Multiple hash function implementations** (Polynomial, Simple, DJB2, FNV)
+- ✅ **Multiple pattern search capability**
+- ✅ **Hash function comparison and analysis**
+- ✅ **Advanced algorithm parameters**
+- ✅ **Optimized multi-pattern search algorithms**
+- ✅ **Hash distribution analysis**
+- ✅ **Interactive hash function selection**
+- ✅ **Enhanced educational content**
 
 ## 📁 Project Structure
 
 ```
 Robin-karp/
-├── main.py                    # Streamlit web application (Enhanced with tabs)
-├── rabin_karp.py             # Core algorithm implementation
+├── main.py                    # Streamlit web application (Enhanced with 5 tabs)
+├── rabin_karp.py             # Core algorithm implementation (Multi-pattern support)
 ├── utils.py                  # Utility functions
-├── visualizer.py             # Step-by-step visualization (NEW!)
-├── performance_analyzer.py   # Performance analysis & comparison (NEW!)
+├── hash_functions.py         # Multiple hash function implementations (NEW!)
+├── visualizer.py             # Step-by-step visualization
+├── performance_analyzer.py   # Performance analysis & comparison
 ├── requirements.txt          # Python dependencies
+├── .gitignore               # Git ignore file
 └── README.md                # Project documentation
 ```
 
@@ -78,11 +80,17 @@ Robin-karp/
 3. **Analyze hash collisions** and distribution
 4. **Study complexity charts** for different input sizes
 
-### 📚 Algorithm Theory Tab
-1. **Learn the theory** behind Rabin-Karp algorithm
-2. **Understand hash functions** and parameter selection
-3. **Explore real-world applications**
-4. **Use the hash calculator** to experiment with values
+### 🎯 Multi-Pattern Search Tab
+1. **Enter multiple patterns** (one per line)
+2. **Choose search mode** - Individual vs Optimized
+3. **View comprehensive results** for all patterns
+4. **Analyze efficiency metrics** and success rates
+
+### 🔧 Advanced Algorithm Parameters
+- **Hash Function Selection**: Choose from 4 different hash functions
+- **Parameter Optimization**: Tune base and prime values
+- **Hash Function Comparison**: Compare performance of different hash methods
+- **Distribution Analysis**: Analyze hash collision patterns
 
 ## 🔧 Algorithm Parameters
 
